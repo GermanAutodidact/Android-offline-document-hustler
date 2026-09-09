@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
@@ -52,7 +53,7 @@ fun DocxInspector(
     onShowInfo: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Extract plain text snippet from document.xml for preview
+    // Extract plain text snippet from document.xml using native streaming XmlPullParser
     val extractedText = remember(rawBytes) {
         try {
             var text = ""
@@ -60,13 +61,8 @@ fun DocxInspector(
                 var entry = zis.nextEntry
                 while (entry != null) {
                     if (entry.name.contains("word/document.xml") || entry.name == "content.xml") {
-                        val xml = String(zis.readBytes(), StandardCharsets.UTF_8)
-                        val stripped = xml
-                            .replace(Regex("<w:p[^>]*>"), "\n")
-                            .replace(Regex("<text:p[^>]*>"), "\n")
-                            .replace(Regex("<[^>]*>"), "")
-                            .trim()
-                        text = stripped
+                        val result = com.example.engine.StreamingXmlDocxParser.parseStream(zis)
+                        text = result.textSnippet
                         break
                     }
                     zis.closeEntry()
@@ -76,6 +72,31 @@ fun DocxInspector(
             if (text.isNotBlank()) text else "Kein lesbarer Fließtext gefunden."
         } catch (e: Exception) {
             "Fehler beim Extrahieren der XML-Inhalte: ${e.localizedMessage}"
+        }
+    }
+
+    // Extract first embedded image if present and decode directly via hardware ImageDecoder
+    val hardwareBitmap = remember(rawBytes, features.hasImages) {
+        if (!features.hasImages) null
+        else {
+            try {
+                var imgBytes: ByteArray? = null
+                ZipInputStream(ByteArrayInputStream(rawBytes)).use { zis ->
+                    var entry = zis.nextEntry
+                    while (entry != null) {
+                        val name = entry.name.lowercase()
+                        if (name.contains("word/media/") || name.contains("pictures/")) {
+                            imgBytes = zis.readBytes()
+                            break
+                        }
+                        zis.closeEntry()
+                        entry = zis.nextEntry
+                    }
+                }
+                imgBytes?.let { com.example.engine.HardwareImageDecoder.decodeByteArray(it, maxDimension = 600) }
+            } catch (e: Exception) {
+                null
+            }
         }
     }
 
@@ -243,6 +264,57 @@ fun DocxInspector(
                             lineHeight = 22.sp,
                             color = MaterialTheme.colorScheme.onSurface
                         )
+                    }
+                }
+            }
+
+            if (hardwareBitmap != null) {
+                Card(
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(0.5.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp))
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Eingebettetes Medium (word/media/):",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Surface(
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text(
+                                    text = "GPU HardwareBitmap (0 Heap)",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(160.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            androidx.compose.foundation.Image(
+                                bitmap = hardwareBitmap.asImageBitmap(),
+                                contentDescription = "Eingebettetes Medium",
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     }
                 }
             }

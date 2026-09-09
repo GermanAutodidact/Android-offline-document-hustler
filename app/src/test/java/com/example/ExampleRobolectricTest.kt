@@ -128,4 +128,67 @@ class ExampleRobolectricTest {
         text = manager.redo(text)
         assertEquals("Hello World", text)
     }
+
+    @Test
+    fun testLOKitTwipsAndPixelConversions() {
+        // 160 dpi => 1 inch = 160 pixels = 1440 twips
+        val twips = com.example.engine.lokit.LOKitNativeWindowRenderer.pixelsToTwips(160f, 160f)
+        assertEquals(1440, twips)
+
+        val pixels = com.example.engine.lokit.LOKitNativeWindowRenderer.twipsToPixels(1440, 160f)
+        assertEquals(160f, pixels, 0.01f)
+    }
+
+    @Test
+    fun testLOKitDefaultDocumentDimensions() {
+        val dims = com.example.engine.lokit.LOKitNativeWindowRenderer.getDocumentSize(0L)
+        assertTrue("Width in twips should be > 0", dims.widthTwips > 0)
+        assertTrue("Height in twips should be > 0", dims.heightTwips > 0)
+    }
+
+    @Test
+    fun testKernelZeroCopyTransferCopiesFileCorrectly() {
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            val sourceFile = File.createTempFile("zero_copy_src_", ".bin", context.cacheDir)
+            val targetFile = File.createTempFile("zero_copy_dest_", ".bin", context.cacheDir)
+
+            val testData = "Zero-Copy Kernel transferTo test data for Samsung A25 Exynos".toByteArray(StandardCharsets.UTF_8)
+            sourceFile.writeBytes(testData)
+
+            val stats = com.example.engine.KernelZeroCopyTransfer.transfer(sourceFile, targetFile)
+            assertEquals(testData.size.toLong(), stats.bytesTransferred)
+            assertEquals(testData.size.toLong(), targetFile.length())
+            assertTrue(testData.contentEquals(targetFile.readBytes()))
+
+            sourceFile.delete()
+            targetFile.delete()
+        }
+    }
+
+    @Test
+    fun testStreamingXmlDocxParserExtractsTextCorrectly() {
+        val sampleXml = """
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+                <w:body>
+                    <w:p><w:r><w:t>Hallo</w:t></w:r><w:r><w:t> </w:t></w:r><w:r><w:t>Samsung A25!</w:t></w:r></w:p>
+                    <w:p><w:r><w:t>Zeile zwei mit Expat Parser.</w:t></w:r></w:p>
+                </w:body>
+            </w:document>
+        """.trimIndent()
+
+        val parseResult = com.example.engine.StreamingXmlDocxParser.parseStream(sampleXml.byteInputStream())
+        assertTrue(parseResult.textSnippet.contains("Hallo Samsung A25!"))
+        assertTrue(parseResult.textSnippet.contains("Zeile zwei mit Expat Parser."))
+    }
+
+    @Test
+    fun testKnoxVaultHeaderDetection() {
+        val plainBytes = "Plain text document content".toByteArray(StandardCharsets.UTF_8)
+        assertFalse(com.example.engine.security.KnoxHardwareVault.isKnoxEncrypted(plainBytes))
+
+        val knoxHeader = "KNOX_VAULT_V1".toByteArray(StandardCharsets.UTF_8) + byteArrayOf(0, 0, 0, 12) + ByteArray(20)
+        assertTrue(com.example.engine.security.KnoxHardwareVault.isKnoxEncrypted(knoxHeader))
+    }
 }

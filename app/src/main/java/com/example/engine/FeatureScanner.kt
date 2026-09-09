@@ -52,23 +52,18 @@ object FeatureScanner {
             while (entry != null) {
                 val name = entry.name.lowercase()
                 if (name.contains("word/document.xml") || name.contains("word/document2.xml")) {
-                    val xmlContent = zis.readBytes()
-                    rawXmlSize += xmlContent.size
-                    val xmlStr = String(xmlContent, StandardCharsets.UTF_8)
-                    if (xmlStr.contains("<w:tbl")) hasTables = true
-                    if (xmlStr.contains("<w:drawing") || xmlStr.contains("<w:pict") || xmlStr.contains("<a:blip")) hasImages = true
-                    if (xmlStr.contains("<w:hyperlink")) hasHyperlinks = true
-                    if (xmlStr.contains("<w:footnotereference") || xmlStr.contains("<w:footnote")) hasFootnotes = true
-                    if (xmlStr.contains("<w:endnotereference") || xmlStr.contains("<w:endnote")) hasEndnotes = true
-                    if (xmlStr.contains("<w:cols")) hasColumns = true
-                    if (xmlStr.contains("<w:shape") || xmlStr.contains("<v:shape")) hasShapes = true
-                    if (xmlStr.contains("<w:comment")) hasComments = true
-                    if (xmlStr.contains("<w:ins") || xmlStr.contains("<w:del")) hasTrackingChanges = true
-
-                    // Strip tags for word count estimate
-                    val stripped = xmlStr.replace(Regex("<[^>]*>"), " ")
-                    val words = stripped.split(Regex("\\s+")).filter { it.isNotBlank() }
-                    estimatedWordCount += words.size
+                    val streamResult = StreamingXmlDocxParser.parseStream(zis)
+                    hasTables = hasTables || streamResult.hasTables
+                    hasImages = hasImages || streamResult.hasImages
+                    hasHyperlinks = hasHyperlinks || streamResult.hasHyperlinks
+                    hasFootnotes = hasFootnotes || streamResult.hasFootnotes
+                    hasEndnotes = hasEndnotes || streamResult.hasEndnotes
+                    hasColumns = hasColumns || streamResult.hasColumns
+                    hasShapes = hasShapes || streamResult.hasShapes
+                    hasComments = hasComments || streamResult.hasComments
+                    hasTrackingChanges = hasTrackingChanges || streamResult.hasTrackingChanges
+                    estimatedWordCount += streamResult.wordCount
+                    rawXmlSize += streamResult.textSnippet.length * 2L
                 } else if (name.contains("word/footnotes.xml")) {
                     hasFootnotes = true
                 } else if (name.contains("word/endnotes.xml")) {

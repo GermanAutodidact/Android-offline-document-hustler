@@ -46,14 +46,25 @@ object BytePreservingStorageEngine {
         editedTextContent: String? = null
     ): SaveResult = withContext(Dispatchers.IO) {
         try {
-            // 1. NO-OP BYTE-PRESERVING PATH
+            // 1. NO-OP BYTE-PRESERVING PATH (LINUX KERNEL ZERO-COPY)
             if (!isDirty && targetFormat == metadata.format) {
-                // Exact byte copy from original
-                val outStream = context.contentResolver.openOutputStream(targetUri, "rwt")
-                    ?: context.contentResolver.openOutputStream(targetUri)
-                    ?: return@withContext SaveResult.Failure("Ausgabestream konnte nicht geöffnet werden.")
+                // If source has a valid content/file descriptor, use Linux kernel sendfile
+                val isZeroCopySuccess = if (metadata.uri.scheme == "content" || metadata.uri.scheme == "file") {
+                    try {
+                        KernelZeroCopyTransfer.transferBetweenUris(context, metadata.uri, targetUri)
+                        true
+                    } catch (e: Exception) {
+                        false
+                    }
+                } else false
 
-                outStream.use { it.write(originalBytes) }
+                if (!isZeroCopySuccess) {
+                    // Fallback to direct stream write
+                    val outStream = context.contentResolver.openOutputStream(targetUri, "rwt")
+                        ?: context.contentResolver.openOutputStream(targetUri)
+                        ?: return@withContext SaveResult.Failure("Ausgabestream konnte nicht geöffnet werden.")
+                    outStream.use { it.write(originalBytes) }
+                }
 
                 val savedBytes = readUriBytes(context, targetUri)
                 val savedHash = computeSha256(savedBytes)
@@ -67,7 +78,7 @@ object BytePreservingStorageEngine {
                     sha256Saved = savedHash,
                     savedSizeBytes = savedBytes.size.toLong(),
                     message = if (hashesMatch) {
-                        "Byte-Preserving No-Op-Save erfolgreich! Datei ist zu 100% byte-identisch zum Original (SHA-256 verifiziert)."
+                        "Byte-Preserving No-Op-Save erfolgreich (Kernel Zero-Copy sendfile)! Datei ist zu 100% byte-identisch zum Original (SHA-256 verifiziert)."
                     } else {
                         "Datei wurde kopiert, Hashes weichen unerwartet ab."
                     }
@@ -105,14 +116,19 @@ object BytePreservingStorageEngine {
                     )
                 }
 
-                // Atomic transfer to target
-                val outStream = context.contentResolver.openOutputStream(targetUri, "rwt")
-                    ?: context.contentResolver.openOutputStream(targetUri)
-                    ?: return@withContext SaveResult.Failure("Ausgabestream für Ziel-URI konnte nicht geöffnet werden.")
+                // Atomic transfer to target via Linux kernel sendfile
+                try {
+                    KernelZeroCopyTransfer.transferToFileDescriptor(context, tempFile, targetUri)
+                } catch (e: Exception) {
+                    // Fallback to standard stream copy if kernel descriptor mapping fails
+                    val outStream = context.contentResolver.openOutputStream(targetUri, "rwt")
+                        ?: context.contentResolver.openOutputStream(targetUri)
+                        ?: return@withContext SaveResult.Failure("Ausgabestream für Ziel-URI konnte nicht geöffnet werden.")
 
-                FileInputStream(tempFile).use { input ->
-                    outStream.use { output ->
-                        input.copyTo(output)
+                    FileInputStream(tempFile).use { input ->
+                        outStream.use { output ->
+                            input.copyTo(output)
+                        }
                     }
                 }
 

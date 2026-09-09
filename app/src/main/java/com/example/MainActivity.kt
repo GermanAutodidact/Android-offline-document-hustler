@@ -83,7 +83,8 @@ class MainActivity : ComponentActivity() {
         viewModel.loadSamples(this)
 
         setContent {
-            MyApplicationTheme {
+            val uiState by viewModel.uiState.collectAsState()
+            MyApplicationTheme(amoledMode = uiState.isAmoledBlackMode) {
                 DocPreserveApp(viewModel = viewModel)
             }
         }
@@ -133,6 +134,8 @@ fun DocPreserveApp(viewModel: DocumentViewModel) {
         topBar = {
             DocPreserveTopAppBar(
                 metadata = uiState.metadata,
+                isAmoledMode = uiState.isAmoledBlackMode,
+                onToggleAmoled = { viewModel.toggleAmoledMode() },
                 onBack = { viewModel.closeDocument() },
                 onSave = {
                     val meta = uiState.metadata
@@ -152,6 +155,12 @@ fun DocPreserveApp(viewModel: DocumentViewModel) {
                 },
                 onShowIntegrity = {
                     viewModel.setIntegrityDialogVisible(true)
+                },
+                onShowKnoxVault = {
+                    viewModel.setKnoxVaultDialogVisible(true)
+                },
+                onPrint = {
+                    viewModel.printCurrentDocument(context)
                 },
                 onMoreMenuToggle = { showMoreMenu = !showMoreMenu },
                 showMoreMenu = showMoreMenu,
@@ -210,7 +219,7 @@ fun DocPreserveApp(viewModel: DocumentViewModel) {
                     }
 
                     DocumentFormat.DOCX, DocumentFormat.ODT -> {
-                        DocxInspector(
+                        com.example.ui.office.OfficeSurfaceViewer(
                             metadata = meta,
                             rawBytes = bytes,
                             features = uiState.features,
@@ -304,16 +313,31 @@ fun DocPreserveApp(viewModel: DocumentViewModel) {
             }
         )
     }
+
+    // Samsung Knox Hardware-Vault Dialog
+    if (uiState.showKnoxVaultDialog && uiState.metadata != null && uiState.rawBytes != null) {
+        com.example.ui.dialogs.KnoxVaultDialog(
+            fileName = uiState.metadata!!.name,
+            rawBytes = uiState.rawBytes!!,
+            onEncryptDocument = { viewModel.encryptCurrentDocumentWithKnox() },
+            onDecryptDocument = { viewModel.decryptCurrentDocumentWithKnox() },
+            onDismiss = { viewModel.setKnoxVaultDialogVisible(false) }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DocPreserveTopAppBar(
     metadata: DocumentMetadata?,
+    isAmoledMode: Boolean,
+    onToggleAmoled: () -> Unit,
     onBack: () -> Unit,
     onSave: () -> Unit,
     onSaveAs: () -> Unit,
     onShowIntegrity: () -> Unit,
+    onShowKnoxVault: () -> Unit,
+    onPrint: () -> Unit,
     onMoreMenuToggle: () -> Unit,
     showMoreMenu: Boolean,
     onDismissMoreMenu: () -> Unit
@@ -392,6 +416,26 @@ fun DocPreserveTopAppBar(
             }
         },
         actions = {
+            // Super-AMOLED True-Black Quick Toggle
+            IconButton(
+                onClick = onToggleAmoled,
+                modifier = Modifier.testTag("btn_toggle_amoled")
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = if (isAmoledMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                    border = if (isAmoledMode) null else androidx.compose.foundation.BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+                ) {
+                    Text(
+                        text = if (isAmoledMode) "AMOLED ✓" else "AMOLED",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isAmoledMode) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
             if (metadata != null) {
                 // Direct Save (No-op byte copy if not dirty)
                 IconButton(
@@ -445,6 +489,20 @@ fun DocPreserveTopAppBar(
                             onClick = {
                                 onDismissMoreMenu()
                                 onShowIntegrity()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Samsung Knox Hardware-Tresor 🔒") },
+                            onClick = {
+                                onDismissMoreMenu()
+                                onShowKnoxVault()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Über Android drucken / PDF-Spooler 🖨️") },
+                            onClick = {
+                                onDismissMoreMenu()
+                                onPrint()
                             }
                         )
                     }

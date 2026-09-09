@@ -21,6 +21,10 @@ android {
     versionName = "1.0"
     resourceConfigurations += listOf("de", "en")
 
+    ndk {
+      abiFilters += listOf("arm64-v8a")
+    }
+
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 

@@ -29,6 +29,8 @@ data class DocumentUiState(
     val preFlightReport: ConversionReport? = null,
     val showIntegrityDialog: Boolean = false,
     val showFormatPicker: Boolean = false,
+    val showKnoxVaultDialog: Boolean = false,
+    val isAmoledBlackMode: Boolean = false,
     val sampleDocs: List<SampleDocumentProvider.SampleDoc> = emptyList(),
     val statusMessage: String? = null
 )
@@ -176,6 +178,99 @@ class DocumentViewModel : ViewModel() {
 
     fun setFormatPickerVisible(visible: Boolean) {
         _uiState.value = _uiState.value.copy(showFormatPicker = visible)
+    }
+
+    fun setKnoxVaultDialogVisible(visible: Boolean) {
+        _uiState.value = _uiState.value.copy(showKnoxVaultDialog = visible)
+    }
+
+    fun toggleAmoledMode() {
+        val current = _uiState.value.isAmoledBlackMode
+        _uiState.value = _uiState.value.copy(
+            isAmoledBlackMode = !current,
+            statusMessage = if (!current) "Super-AMOLED True-Black aktiv (#000000 · 0 mA)" else "Standard-Farbschema aktiv"
+        )
+    }
+
+    fun encryptCurrentDocumentWithKnox() {
+        val bytes = _uiState.value.rawBytes ?: return
+        try {
+            val result = com.example.engine.security.KnoxHardwareVault.encryptDocument(bytes)
+            _uiState.value = _uiState.value.copy(
+                rawBytes = result.encryptedBytes,
+                statusMessage = "Dokument im Samsung Knox Hardware-Tresor (AES-256-GCM) verschlüsselt! 🔒",
+                showKnoxVaultDialog = false
+            )
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                statusMessage = "Knox-Verschlüsselung fehlgeschlagen: ${e.localizedMessage}"
+            )
+        }
+    }
+
+    fun decryptCurrentDocumentWithKnox() {
+        val bytes = _uiState.value.rawBytes ?: return
+        try {
+            val decryptedBytes = com.example.engine.security.KnoxHardwareVault.decryptDocument(bytes)
+            val newHash = BytePreservingStorageEngine.computeSha256(decryptedBytes)
+            val meta = _uiState.value.metadata
+            val text = if (meta?.format == DocumentFormat.TXT || meta?.format == DocumentFormat.MD) {
+                String(decryptedBytes, StandardCharsets.UTF_8)
+            } else _uiState.value.textContent
+
+            _uiState.value = _uiState.value.copy(
+                rawBytes = decryptedBytes,
+                textContent = text,
+                metadata = meta?.copy(currentSha256 = newHash),
+                statusMessage = "Dokument erfolgreich mit Knox-Hardware-Schlüssel entsperrt! 🔓",
+                showKnoxVaultDialog = false
+            )
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                statusMessage = "Knox-Entschlüsselung fehlgeschlagen: ${e.localizedMessage}"
+            )
+        }
+    }
+
+    fun printCurrentDocument(context: Context) {
+        val bytes = _uiState.value.rawBytes ?: return
+        val meta = _uiState.value.metadata ?: return
+        viewModelScope.launch {
+            try {
+                val tempPdf = java.io.File.createTempFile("print_job_", ".pdf", context.cacheDir)
+                if (meta.format == DocumentFormat.PDF) {
+                    tempPdf.writeBytes(bytes)
+                } else {
+                    // Generate basic printable PDF via PdfDocument if text format
+                    val pdfDoc = android.graphics.pdf.PdfDocument()
+                    val pageInfo = android.graphics.pdf.PdfDocument.PageInfo.Builder(595, 842, 1).create() // A4
+                    val page = pdfDoc.startPage(pageInfo)
+                    val paint = android.graphics.Paint().apply {
+                        textSize = 12f
+                        color = android.graphics.Color.BLACK
+                    }
+                    val textToPrint = if (_uiState.value.textContent.isNotBlank()) _uiState.value.textContent else meta.name
+                    var y = 50f
+                    for (line in textToPrint.lines().take(50)) {
+                        page.canvas.drawText(line, 40f, y, paint)
+                        y += 16f
+                    }
+                    pdfDoc.finishPage(page)
+                    java.io.FileOutputStream(tempPdf).use { pdfDoc.writeTo(it) }
+                    pdfDoc.close()
+                }
+
+                com.example.engine.SystemPdfPrinter.printPdfDocument(
+                    context = context,
+                    pdfFile = tempPdf,
+                    jobName = meta.name
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    statusMessage = "Drucken fehlgeschlagen: ${e.localizedMessage}"
+                )
+            }
+        }
     }
 
     fun closeDocument() {

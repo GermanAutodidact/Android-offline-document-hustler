@@ -30,6 +30,26 @@ private val DarkColorScheme = darkColorScheme(
     errorContainer = Slate800
 )
 
+// Samsung Super-AMOLED True-Black (#000000) for zero power consumption on black pixels
+private val AmoledDarkColorScheme = darkColorScheme(
+    primary = BrandBlue,
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFF1E293B),
+    onPrimaryContainer = Slate100,
+    secondary = TealAccent,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFF1E293B),
+    onSecondaryContainer = TealContainer,
+    background = Color.Black,
+    onBackground = Color(0xFFF1F5F9),
+    surface = Color(0xFF09090B),
+    onSurface = Color(0xFFF1F5F9),
+    surfaceVariant = Color(0xFF121214),
+    onSurfaceVariant = Color(0xFFCBD5E1),
+    error = ErrorRed,
+    errorContainer = Color(0xFF1E293B)
+)
+
 private val LightColorScheme = lightColorScheme(
     primary = BrandBlue,
     onPrimary = Color.White,
@@ -53,9 +73,11 @@ private val LightColorScheme = lightColorScheme(
 fun MyApplicationTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
+    amoledMode: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val colorScheme = when {
+        amoledMode -> AmoledDarkColorScheme
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
