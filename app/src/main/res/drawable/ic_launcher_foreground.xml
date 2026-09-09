@@ -1,0 +1,41 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Document Base Sheet inside safe 66dp area (26 to 82) -->
+    <path
+        android:fillColor="#F8FAFC"
+        android:pathData="M34,24 L62,24 L74,36 L74,84 C74,86.2 72.2,88 70,88 L34,88 C31.8,88 30,86.2 30,84 L30,28 C30,25.8 31.8,24 34,24 Z" />
+    
+    <!-- Folded Corner Accent -->
+    <path
+        android:fillColor="#94A3B8"
+        android:pathData="M62,24 L74,36 L62,36 Z" />
+    <path
+        android:fillColor="#CBD5E1"
+        android:pathData="M62,24 L62,36 L74,36 Z" />
+
+    <!-- Document Content Lines -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M38,44 L66,44 A2,2 0 0,0 66,40 L38,40 A2,2 0 0,0 38,44 Z" />
+    <path
+        android:fillColor="#94A3B8"
+        android:pathData="M38,52 L60,52 A2,2 0 0,0 60,48 L38,48 A2,2 0 0,0 38,52 Z" />
+    <path
+        android:fillColor="#94A3B8"
+        android:pathData="M38,60 L54,60 A2,2 0 0,0 54,56 L38,56 A2,2 0 0,0 38,60 Z" />
+
+    <!-- Byte Protection Shield Badge -->
+    <path
+        android:fillColor="#2563EB"
+        android:pathData="M64,60 L78,60 C78,70 71,76 64,80 C57,76 50,70 50,60 L64,60 Z" />
+    
+    <!-- Checkmark inside Shield (Byte Integrity Preserved) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M62.5,72.5 L57,67 L59,65 L62.5,68.5 L69,62 L71,64 Z" />
+</vector>
+

@@ -1,0 +1,6 @@
+{
+  "name": "DocPreserve",
+  "description": "Schlanker Offline-Dokumenten-Editor mit Byte-Preserving Save, nativem Android PdfRenderer, TXT/MD-Editor und Pre-Flight-Analyse.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
