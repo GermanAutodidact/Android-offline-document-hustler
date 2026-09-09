@@ -1,9 +1,9 @@
 package com.example.ui.home
 
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,31 +12,33 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -45,249 +47,303 @@ import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.engine.SampleDocumentProvider
 import com.example.model.DocumentFormat
+import com.example.ui.theme.WordBlue
+import com.example.ui.theme.WordBorderGray
+import com.example.ui.theme.WordDeskBackground
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DocumentHomeScreen(
     sampleDocs: List<SampleDocumentProvider.SampleDoc>,
     onOpenSaf: () -> Unit,
     onCreateNew: (DocumentFormat) -> Unit,
     onOpenSample: (SampleDocumentProvider.SampleDoc) -> Unit,
+    onOpenSettings: () -> Unit,
+    isAmoledMode: Boolean = false,
+    onToggleAmoled: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    LazyColumn(
+    Column(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+            .background(if (isAmoledMode) Color.Black else WordDeskBackground)
+            .statusBarsPadding()
+            .navigationBarsPadding()
     ) {
-        item {
-            Spacer(modifier = Modifier.height(8.dp))
-            // Hero Brand Header
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 2.dp,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-                                    MaterialTheme.colorScheme.surface
-                                )
-                            )
-                        )
-                        .padding(18.dp)
-                ) {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_shield_check),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(32.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = "DocPreserve Studio",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = "Phase 0 · Byte-Preserving Foundation",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Text(
-                            text = "Garantierte Byte-Treue: Öffnen → Speichern ohne Änderungen erzeugt eine 100% byte-identische Kopie ohne Neu-Serialisierung.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            lineHeight = 18.sp
-                        )
-                    }
-                }
-            }
-        }
-
-        // Action Buttons Row
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = onOpenSaf,
-                    modifier = Modifier
-                        .weight(1.2f)
-                        .testTag("btn_open_saf")
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_doc),
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Öffnen (SAF)", maxLines = 1)
-                }
-
-                FilledTonalButton(
-                    onClick = { onCreateNew(DocumentFormat.MD) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("btn_new_md")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Neu .md", maxLines = 1)
-                }
-
-                OutlinedButton(
-                    onClick = { onCreateNew(DocumentFormat.TXT) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("btn_new_txt")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Neu .txt", maxLines = 1)
-                }
-            }
-        }
-
-        // Architecture Pillars Card
-        item {
-            Card(
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(0.5.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
-            ) {
-                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "Implementierte Phase-0 Architektur",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    PillarItem(
-                        title = "1. Byte-Preserving No-Op-Save",
-                        description = "Wenn !isDirty: Reine Byte-Kopie (copyOriginalBytes). Kein LibreOffice-Export, keine Formatverluste."
-                    )
-                    PillarItem(
-                        title = "2. Nativer Android PdfRenderer",
-                        description = "0 KB APK-Overhead für PDF-Viewer. Zoom, Gesten, Seitennavigation und direkter Android-Druck."
-                    )
-                    PillarItem(
-                        title = "3. Pre-Flight Conversion Scanner",
-                        description = "Prüft XML- & Dokumentstrukturen (Tabellen, Bilder, Links) vor Formatwechseln und warnt vor Verlusten."
-                    )
-                    PillarItem(
-                        title = "4. Atomare Speicher-Sicherheit",
-                        description = "Temp-Datei → Formatvalidierung → Ersetzen. Bei Fehlern greift sofortiges Rollback."
-                    )
-                }
-            }
-        }
-
-        // Section Title: Sample Documents
-        item {
-            Text(
-                text = "Bereitgestellte Test-Dokumente:",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(top = 6.dp)
-            )
-        }
-
-        // List of sample documents
-        items(sampleDocs) { sample ->
-            ElevatedCard(
-                shape = RoundedCornerShape(10.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onOpenSample(sample) }
-                    .testTag("sample_doc_${sample.formatTag.lowercase()}")
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+        // TOP APP BAR MIT WORD-BRANDING & ZAHNRAD EINSTELLUNGEN
+        TopAppBar(
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = if (isAmoledMode) Color.Black else WordBlue,
+                titleContentColor = Color.White,
+                actionIconContentColor = Color.White
+            ),
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = when (sample.formatTag) {
-                            "PDF" -> MaterialTheme.colorScheme.errorContainer
-                            "DOCX" -> MaterialTheme.colorScheme.primaryContainer
-                            "MD" -> MaterialTheme.colorScheme.tertiaryContainer
-                            else -> MaterialTheme.colorScheme.secondaryContainer
-                        },
-                        modifier = Modifier.size(44.dp)
+                        shape = CircleShape,
+                        color = Color.White.copy(alpha = 0.25f),
+                        modifier = Modifier.size(34.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(
-                                text = sample.formatTag,
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = when (sample.formatTag) {
-                                    "PDF" -> MaterialTheme.colorScheme.onErrorContainer
-                                    "DOCX" -> MaterialTheme.colorScheme.onPrimaryContainer
-                                    "MD" -> MaterialTheme.colorScheme.onTertiaryContainer
-                                    else -> MaterialTheme.colorScheme.onSecondaryContainer
-                                }
+                                text = "W",
+                                fontWeight = FontWeight.Black,
+                                fontSize = 17.sp,
+                                color = Color.White
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "DocPreserve",
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = "Word Edition · Samsung A25",
+                            fontSize = 10.sp,
+                            color = Color.White.copy(alpha = 0.8f)
+                        )
+                    }
+                }
+            },
+            actions = {
+                // AMOLED Quick Switch
+                IconButton(
+                    onClick = onToggleAmoled,
+                    modifier = Modifier.testTag("btn_home_amoled")
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = if (isAmoledMode) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f)
+                    ) {
+                        Text(
+                            text = if (isAmoledMode) "AMOLED ✓" else "AMOLED",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+
+                // ZAHNRAD FÜR EINSTELLUNGEN
+                IconButton(
+                    onClick = onOpenSettings,
+                    modifier = Modifier.testTag("btn_home_settings")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Einstellungen",
+                        tint = Color.White
+                    )
+                }
+            }
+        )
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(if (isAmoledMode) Color.Black else WordDeskBackground)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+        item {
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // MICROSOFT WORD MOBILE BRANDING & TEMPLATE HEADER
+            Text(
+                text = "Neues Dokument erstellen",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF201F1E)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Template Carousel (Leeres Dokument, Notizen, Vorlage)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // 1. Leeres Dokument (DOCX)
+                WordTemplateCard(
+                    title = "Leeres Dokument",
+                    subtitle = "Word (.docx)",
+                    isPrimary = true,
+                    testTag = "btn_new_docx",
+                    onClick = { onCreateNew(DocumentFormat.DOCX) }
+                )
+
+                // 2. Notizen (MD)
+                WordTemplateCard(
+                    title = "Notizen & Markdown",
+                    subtitle = "Markdown (.md)",
+                    isPrimary = false,
+                    testTag = "btn_new_md",
+                    onClick = { onCreateNew(DocumentFormat.MD) }
+                )
+
+                // 3. Reines Textdokument (TXT)
+                WordTemplateCard(
+                    title = "Textdokument",
+                    subtitle = "Reiner Text (.txt)",
+                    isPrimary = false,
+                    testTag = "btn_new_txt",
+                    onClick = { onCreateNew(DocumentFormat.TXT) }
+                )
+            }
+        }
+
+        // QUICK OPEN / DEVICE STORAGE BUTTON
+        item {
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = Color.White,
+                shadowElevation = 1.dp,
+                border = androidx.compose.foundation.BorderStroke(0.5.dp, WordBorderGray),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenSaf() }
+                    .testTag("btn_open_saf")
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = WordBlue.copy(alpha = 0.12f),
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_doc),
+                                contentDescription = null,
+                                tint = WordBlue,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(14.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Dokument vom Gerät öffnen",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E293B)
+                        )
+                        Text(
+                            text = "Dateimanager (SAF) · DOCX, PDF, MD, TXT, ODT",
+                            fontSize = 11.sp,
+                            color = Color.Gray
+                        )
+                    }
+
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Öffnen",
+                        tint = WordBlue,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+        }
+
+        // SECTION: ZULETZT VERWENDET (Recent Documents with Word Blue badges)
+        item {
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Zuletzt verwendet",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF201F1E)
+                )
+                Text(
+                    text = "${sampleDocs.size} Dokumente",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
+        }
+
+        items(sampleDocs) { sample ->
+            ElevatedCard(
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenSample(sample) }
+                    .testTag("sample_doc_${sample.name}"),
+                colors = androidx.compose.material3.CardDefaults.elevatedCardColors(containerColor = Color.White)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // WORD ICON BADGE (The signature Word 'W' Blue Tile)
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = when (sample.formatTag) {
+                            "DOCX" -> WordBlue
+                            "PDF" -> Color(0xFFC00000) // Red for PDF
+                            "MD" -> Color(0xFF0D9488) // Teal for Markdown
+                            else -> Color(0xFF595959) // Gray for Text
+                        },
+                        modifier = Modifier.size(42.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = when (sample.formatTag) {
+                                    "DOCX" -> "W"
+                                    "PDF" -> "PDF"
+                                    "MD" -> "MD"
+                                    else -> "TXT"
+                                },
+                                fontWeight = FontWeight.Black,
+                                fontSize = if (sample.formatTag == "DOCX") 20.sp else 12.sp,
+                                color = Color.White
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(14.dp))
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = sample.name,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFF1E293B),
+                            maxLines = 1
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = sample.description,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 12.sp
+                            text = "Auf diesem Gerät · ${sample.description}",
+                            fontSize = 11.sp,
+                            color = Color.Gray,
+                            maxLines = 1
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Surface(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(6.dp)
+                    IconButton(
+                        onClick = { onOpenSample(sample) },
+                        modifier = Modifier.size(32.dp)
                     ) {
-                        Text(
-                            text = "Öffnen",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Optionen",
+                            tint = Color.Gray,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
@@ -295,34 +351,91 @@ fun DocumentHomeScreen(
         }
 
         item {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
         }
+    }
     }
 }
 
 @Composable
-private fun PillarItem(title: String, description: String) {
-    Row(verticalAlignment = Alignment.Top) {
-        Icon(
-            imageVector = Icons.Default.CheckCircle,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(16.dp).padding(top = 2.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Column {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall,
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+private fun WordTemplateCard(
+    title: String,
+    subtitle: String,
+    isPrimary: Boolean,
+    testTag: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(10.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            width = if (isPrimary) 1.5.dp else 1.dp,
+            color = if (isPrimary) WordBlue else WordBorderGray
+        ),
+        color = Color.White,
+        shadowElevation = if (isPrimary) 2.dp else 1.dp,
+        modifier = Modifier
+            .width(130.dp)
+            .height(150.dp)
+            .clickable { onClick() }
+            .testTag(testTag)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(10.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Miniature Page Sheet Preview
+            Surface(
+                shape = RoundedCornerShape(4.dp),
+                border = androidx.compose.foundation.BorderStroke(0.5.dp, WordBorderGray),
+                color = if (isPrimary) WordBlue.copy(alpha = 0.05f) else Color(0xFFFAFAFA),
+                modifier = Modifier
+                    .width(60.dp)
+                    .height(78.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    if (isPrimary) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            tint = WordBlue,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else {
+                        Column(
+                            modifier = Modifier.padding(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            repeat(4) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(if (it == 3) 0.6f else 1f)
+                                        .height(3.dp)
+                                        .background(Color.LightGray, RoundedCornerShape(1.dp))
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = title,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isPrimary) WordBlue else Color(0xFF1E293B),
+                    maxLines = 1
+                )
+                Text(
+                    text = subtitle,
+                    fontSize = 9.sp,
+                    color = Color.Gray,
+                    maxLines = 1
+                )
+            }
         }
     }
 }

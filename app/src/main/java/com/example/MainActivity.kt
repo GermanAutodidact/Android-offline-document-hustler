@@ -1,5 +1,6 @@
 package com.example
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -65,6 +67,7 @@ import com.example.ui.DocumentViewModel
 import com.example.ui.dialogs.ByteIntegrityDialog
 import com.example.ui.dialogs.FormatPickerDialog
 import com.example.ui.dialogs.PreFlightDialog
+import com.example.ui.dialogs.SettingsDialog
 import com.example.ui.docx.DocxInspector
 import com.example.ui.editor.TextEditor
 import com.example.ui.home.DocumentHomeScreen
@@ -79,13 +82,59 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Install Crash-Shield to capture any uncaught thread crash and preserve text
+        com.example.engine.AppCrashShield.install(this) {
+            val state = viewModel.uiState.value
+            Pair(state.metadata?.name, state.textContent)
+        }
+
         // Initialize sample documents
         viewModel.loadSamples(this)
+
+        // Handle incoming intent if opened via "Öffnen mit", else check for recovered draft
+        if (intent?.action == Intent.ACTION_VIEW || intent?.action == Intent.ACTION_EDIT) {
+            handleIncomingIntent(intent)
+        } else {
+            viewModel.checkAndRestoreDraft(this)
+        }
 
         setContent {
             val uiState by viewModel.uiState.collectAsState()
             MyApplicationTheme(amoledMode = uiState.isAmoledBlackMode) {
                 DocPreserveApp(viewModel = viewModel)
+            }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Immediate atomic flush of currently edited document to prevent kill-loss
+        val state = viewModel.uiState.value
+        val meta = state.metadata
+        if (meta != null && state.textContent.isNotBlank()) {
+            com.example.engine.DraftManager.saveDraftAtomic(
+                context = this,
+                uriString = meta.uri.toString(),
+                docName = meta.name,
+                text = state.textContent
+            )
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingIntent(intent)
+    }
+
+    private fun handleIncomingIntent(incomingIntent: Intent?) {
+        if (incomingIntent == null) return
+        val action = incomingIntent.action
+        if (action == Intent.ACTION_VIEW || action == Intent.ACTION_EDIT) {
+            val uri: Uri? = incomingIntent.data
+                ?: incomingIntent.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.uri
+            if (uri != null) {
+                viewModel.openDocument(this, uri)
             }
         }
     }
@@ -99,6 +148,7 @@ fun DocPreserveApp(viewModel: DocumentViewModel) {
     val snackbarHostState = remember { SnackbarHostState() }
     var showMoreMenu by remember { mutableStateOf(false) }
     var pendingTargetFormat by remember { mutableStateOf<DocumentFormat?>(null) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
 
     // SAF Open Document launcher
     val openDocumentLauncher = rememberLauncherForActivityResult(
@@ -128,50 +178,55 @@ fun DocPreserveApp(viewModel: DocumentViewModel) {
         }
     }
 
+    val showOuterTopBar = uiState.metadata != null && uiState.metadata?.format == DocumentFormat.PDF
+
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing,
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
-            DocPreserveTopAppBar(
-                metadata = uiState.metadata,
-                isAmoledMode = uiState.isAmoledBlackMode,
-                onToggleAmoled = { viewModel.toggleAmoledMode() },
-                onBack = { viewModel.closeDocument() },
-                onSave = {
-                    val meta = uiState.metadata
-                    if (meta != null) {
-                        if (meta.uri.scheme == "memory") {
-                            // Needs target URI from user
-                            pendingTargetFormat = meta.format
-                            createDocumentLauncher.launch(meta.name)
-                        } else {
-                            // Direct save to current file (No-Op byte copy if !isDirty)
-                            viewModel.executeSave(context, meta.uri, meta.format)
+            if (showOuterTopBar) {
+                DocPreserveTopAppBar(
+                    metadata = uiState.metadata,
+                    isAmoledMode = uiState.isAmoledBlackMode,
+                    onToggleAmoled = { viewModel.toggleAmoledMode(context) },
+                    onOpenSettings = { showSettingsDialog = true },
+                    onBack = { viewModel.closeDocument(context) },
+                    onSave = {
+                        val meta = uiState.metadata
+                        if (meta != null) {
+                            if (meta.uri.scheme == "memory") {
+                                // Needs target URI from user
+                                pendingTargetFormat = meta.format
+                                createDocumentLauncher.launch(meta.name)
+                            } else {
+                                // Direct save to current file (No-Op byte copy if !isDirty)
+                                viewModel.executeSave(context, meta.uri, meta.format)
+                            }
                         }
-                    }
-                },
-                onSaveAs = {
-                    viewModel.setFormatPickerVisible(true)
-                },
-                onShowIntegrity = {
-                    viewModel.setIntegrityDialogVisible(true)
-                },
-                onShowKnoxVault = {
-                    viewModel.setKnoxVaultDialogVisible(true)
-                },
-                onPrint = {
-                    viewModel.printCurrentDocument(context)
-                },
-                onMoreMenuToggle = { showMoreMenu = !showMoreMenu },
-                showMoreMenu = showMoreMenu,
-                onDismissMoreMenu = { showMoreMenu = false }
-            )
+                    },
+                    onSaveAs = {
+                        viewModel.setFormatPickerVisible(true)
+                    },
+                    onShowIntegrity = {
+                        viewModel.setIntegrityDialogVisible(true)
+                    },
+                    onShowKnoxVault = {
+                        viewModel.setKnoxVaultDialogVisible(true)
+                    },
+                    onPrint = {
+                        viewModel.printCurrentDocument(context)
+                    },
+                    onMoreMenuToggle = { showMoreMenu = !showMoreMenu },
+                    showMoreMenu = showMoreMenu,
+                    onDismissMoreMenu = { showMoreMenu = false }
+                )
+            }
         }
     ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(if (showOuterTopBar) innerPadding else androidx.compose.foundation.layout.PaddingValues(0.dp))
         ) {
             val meta = uiState.metadata
             val bytes = uiState.rawBytes
@@ -196,7 +251,10 @@ fun DocPreserveApp(viewModel: DocumentViewModel) {
                     },
                     onOpenSample = { sample ->
                         viewModel.openDocument(context, sample.uri, sample.name)
-                    }
+                    },
+                    onOpenSettings = { showSettingsDialog = true },
+                    isAmoledMode = uiState.isAmoledBlackMode,
+                    onToggleAmoled = { viewModel.toggleAmoledMode(context) }
                 )
             } else {
                 // Active Document Workspace
@@ -209,21 +267,38 @@ fun DocPreserveApp(viewModel: DocumentViewModel) {
                         )
                     }
 
-                    DocumentFormat.TXT, DocumentFormat.MD -> {
-                        TextEditor(
-                            initialText = uiState.textContent,
-                            format = meta.format,
-                            onTextChanged = { viewModel.onTextChanged(it) },
-                            onShowInfo = { viewModel.setIntegrityDialogVisible(true) }
-                        )
-                    }
-
-                    DocumentFormat.DOCX, DocumentFormat.ODT -> {
-                        com.example.ui.office.OfficeSurfaceViewer(
+                    DocumentFormat.TXT, DocumentFormat.MD, DocumentFormat.DOCX, DocumentFormat.ODT -> {
+                        com.example.ui.word.WordDocumentEditor(
                             metadata = meta,
-                            rawBytes = bytes,
-                            features = uiState.features,
-                            onShowInfo = { viewModel.setIntegrityDialogVisible(true) }
+                            initialContent = uiState.textContent,
+                            onContentChanged = { viewModel.onTextChanged(it, context) },
+                            onSave = {
+                                if (meta.uri.scheme == "memory") {
+                                    pendingTargetFormat = meta.format
+                                    createDocumentLauncher.launch(meta.name)
+                                } else {
+                                    viewModel.executeSave(context, meta.uri, meta.format)
+                                }
+                            },
+                            onSaveAs = {
+                                viewModel.setFormatPickerVisible(true)
+                            },
+                            onClose = {
+                                viewModel.closeDocument(context)
+                            },
+                            onPrint = {
+                                viewModel.printCurrentDocument(context)
+                            },
+                            onShowIntegrity = {
+                                viewModel.setIntegrityDialogVisible(true)
+                            },
+                            onShowKnoxVault = {
+                                viewModel.setKnoxVaultDialogVisible(true)
+                            },
+                            onToggleAmoled = {
+                                viewModel.toggleAmoledMode(context)
+                            },
+                            isAmoledMode = uiState.isAmoledBlackMode
                         )
                     }
 
@@ -324,6 +399,15 @@ fun DocPreserveApp(viewModel: DocumentViewModel) {
             onDismiss = { viewModel.setKnoxVaultDialogVisible(false) }
         )
     }
+
+    // Global Settings Modal (Zahnrad)
+    if (showSettingsDialog) {
+        SettingsDialog(
+            isAmoledMode = uiState.isAmoledBlackMode,
+            onToggleAmoled = { viewModel.toggleAmoledMode() },
+            onDismiss = { showSettingsDialog = false }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -332,6 +416,7 @@ fun DocPreserveTopAppBar(
     metadata: DocumentMetadata?,
     isAmoledMode: Boolean,
     onToggleAmoled: () -> Unit,
+    onOpenSettings: () -> Unit,
     onBack: () -> Unit,
     onSave: () -> Unit,
     onSaveAs: () -> Unit,
@@ -344,8 +429,10 @@ fun DocPreserveTopAppBar(
 ) {
     TopAppBar(
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface
+            containerColor = if (isAmoledMode) androidx.compose.ui.graphics.Color.Black else com.example.ui.theme.WordBlue,
+            titleContentColor = androidx.compose.ui.graphics.Color.White,
+            navigationIconContentColor = androidx.compose.ui.graphics.Color.White,
+            actionIconContentColor = androidx.compose.ui.graphics.Color.White
         ),
         title = {
             if (metadata != null) {
@@ -355,6 +442,7 @@ fun DocPreserveTopAppBar(
                             text = metadata.name,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
+                            color = androidx.compose.ui.graphics.Color.White,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -364,13 +452,13 @@ fun DocPreserveTopAppBar(
                             Box(
                                 modifier = Modifier
                                     .size(8.dp)
-                                    .background(MaterialTheme.colorScheme.tertiary, CircleShape)
+                                    .background(androidx.compose.ui.graphics.Color.Yellow, CircleShape)
                             )
                         } else {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_shield_check),
                                 contentDescription = "Byte-Identisch",
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = androidx.compose.ui.graphics.Color.White,
                                 modifier = Modifier.size(14.dp)
                             )
                         }
@@ -382,22 +470,31 @@ fun DocPreserveTopAppBar(
                             "${metadata.format.displayName} · Geändert (isDirty = true)",
                         style = MaterialTheme.typography.labelSmall,
                         fontSize = 11.sp,
-                        color = if (!metadata.isDirty) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
+                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f)
                     )
                 }
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_shield_check),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        shape = CircleShape,
+                        color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.25f),
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "W",
+                                fontWeight = FontWeight.Black,
+                                fontSize = 16.sp,
+                                color = androidx.compose.ui.graphics.Color.White
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "DocPreserve",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        text = "Word",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = androidx.compose.ui.graphics.Color.White
                     )
                 }
             }
@@ -434,6 +531,17 @@ fun DocPreserveTopAppBar(
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                     )
                 }
+            }
+
+            // Settings Zahnrad
+            IconButton(
+                onClick = onOpenSettings,
+                modifier = Modifier.testTag("btn_topbar_settings")
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Einstellungen"
+                )
             }
 
             if (metadata != null) {

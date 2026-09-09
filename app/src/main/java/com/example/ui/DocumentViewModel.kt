@@ -1,6 +1,7 @@
 package com.example.ui
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -41,6 +42,8 @@ class DocumentViewModel : ViewModel() {
     val uiState: StateFlow<DocumentUiState> = _uiState.asStateFlow()
 
     fun loadSamples(context: Context) {
+        val amoled = com.example.engine.DraftManager.isAmoledModeEnabled(context)
+        _uiState.value = _uiState.value.copy(isAmoledBlackMode = amoled)
         viewModelScope.launch {
             val samples = SampleDocumentProvider.initializeSampleDocuments(context)
             _uiState.value = _uiState.value.copy(sampleDocs = samples)
@@ -48,18 +51,40 @@ class DocumentViewModel : ViewModel() {
     }
 
     fun openDocument(context: Context, uri: Uri, explicitName: String? = null) {
+        // Attempt to persist URI permissions to prevent SecurityException after app restart / switch
+        try {
+            val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            context.contentResolver.takePersistableUriPermission(uri, flags)
+        } catch (_: Exception) {
+            // Some URI providers (like temporary intents from email clients) do not support persistable permissions
+        }
+
         viewModelScope.launch {
             try {
                 val bytes = BytePreservingStorageEngine.readUriBytes(context, uri)
-                val resolvedName = explicitName ?: (uri.lastPathSegment ?: "document")
-                val format = DocumentFormat.fromFileNameOrMime(resolvedName, context.contentResolver.getType(uri))
+                val resolvedName = explicitName ?: resolveFileName(context, uri)
+                val mime = try { context.contentResolver.getType(uri) } catch (_: Exception) { null }
+                val format = DocumentFormat.fromFileNameOrMime(resolvedName, mime)
                 val sha256 = BytePreservingStorageEngine.computeSha256(bytes)
                 val features = FeatureScanner.scanDocument(context, uri, format, bytes)
 
-                val text = if (format == DocumentFormat.TXT || format == DocumentFormat.MD) {
-                    String(bytes, StandardCharsets.UTF_8)
-                } else {
-                    ""
+                val text = when (format) {
+                    DocumentFormat.TXT, DocumentFormat.MD -> {
+                        String(bytes, StandardCharsets.UTF_8)
+                    }
+                    DocumentFormat.DOCX, DocumentFormat.ODT -> {
+                        try {
+                            val parsed = com.example.engine.StreamingXmlDocxParser.parseStream(bytes.inputStream())
+                            if (parsed.textSnippet.isNotBlank()) {
+                                parsed.textSnippet
+                            } else {
+                                "Neues Dokument\n\nBeginnen Sie hier mit der Eingabe Ihres Textes..."
+                            }
+                        } catch (e: Exception) {
+                            "Dokument\n\nBeginnen Sie hier mit der Eingabe..."
+                        }
+                    }
+                    else -> ""
                 }
 
                 val metadata = DocumentMetadata(
@@ -89,9 +114,8 @@ class DocumentViewModel : ViewModel() {
         }
     }
 
-    fun onTextChanged(newText: String) {
+    fun onTextChanged(newText: String, context: Context? = null) {
         val currentMeta = _uiState.value.metadata ?: return
-        val currentBytes = _uiState.value.rawBytes ?: return
 
         val newBytes = newText.toByteArray(StandardCharsets.UTF_8)
         val newHash = BytePreservingStorageEngine.computeSha256(newBytes)
@@ -104,6 +128,16 @@ class DocumentViewModel : ViewModel() {
                 currentSha256 = newHash
             )
         )
+
+        // Crash-protection: auto-cache draft in background with debouncing & AtomicFile
+        context?.let { ctx ->
+            com.example.engine.DraftManager.scheduleDebouncedSave(
+                context = ctx,
+                uriString = currentMeta.uri.toString(),
+                docName = currentMeta.name,
+                text = newText
+            )
+        }
     }
 
     fun onPageRotated() {
@@ -145,10 +179,12 @@ class DocumentViewModel : ViewModel() {
                 targetFormat = targetFormat,
                 isDirty = meta.isDirty,
                 originalBytes = rawBytes,
-                editedTextContent = if (targetFormat == DocumentFormat.TXT || targetFormat == DocumentFormat.MD) state.textContent else null
+                editedTextContent = if (targetFormat == DocumentFormat.TXT || targetFormat == DocumentFormat.MD || targetFormat == DocumentFormat.DOCX) state.textContent else null
             )
 
             val updatedMeta = if (result is SaveResult.Success) {
+                // Successfully persisted: clear intermediate emergency draft
+                com.example.engine.DraftManager.clearDraft(context)
                 meta.copy(
                     isDirty = false,
                     originalSha256 = result.sha256Saved,
@@ -184,12 +220,16 @@ class DocumentViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(showKnoxVaultDialog = visible)
     }
 
-    fun toggleAmoledMode() {
+    fun toggleAmoledMode(context: Context? = null) {
         val current = _uiState.value.isAmoledBlackMode
+        val next = !current
         _uiState.value = _uiState.value.copy(
-            isAmoledBlackMode = !current,
-            statusMessage = if (!current) "Super-AMOLED True-Black aktiv (#000000 · 0 mA)" else "Standard-Farbschema aktiv"
+            isAmoledBlackMode = next,
+            statusMessage = if (next) "Super-AMOLED True-Black aktiv (#000000 · 0 mA)" else "Standard-Farbschema aktiv"
         )
+        context?.let { ctx ->
+            com.example.engine.DraftManager.setAmoledModeEnabled(ctx, next)
+        }
     }
 
     fun encryptCurrentDocumentWithKnox() {
@@ -273,7 +313,8 @@ class DocumentViewModel : ViewModel() {
         }
     }
 
-    fun closeDocument() {
+    fun closeDocument(context: Context? = null) {
+        context?.let { com.example.engine.DraftManager.clearDraft(it) }
         _uiState.value = _uiState.value.copy(
             metadata = null,
             rawBytes = null,
@@ -284,18 +325,48 @@ class DocumentViewModel : ViewModel() {
         )
     }
 
+    fun checkAndRestoreDraft(context: Context): Boolean {
+        val draftText = com.example.engine.DraftManager.getDraftText(context)
+        val draftName = com.example.engine.DraftManager.getDraftName(context)
+        if (!draftText.isNullOrBlank() && !draftName.isNullOrBlank()) {
+            val format = DocumentFormat.fromFileNameOrMime(draftName, null)
+            val bytes = draftText.toByteArray(StandardCharsets.UTF_8)
+            val sha = BytePreservingStorageEngine.computeSha256(bytes)
+            val metadata = DocumentMetadata(
+                uri = Uri.parse("draft://$draftName"),
+                name = "$draftName (Wiederhergestellt)",
+                sizeBytes = bytes.size.toLong(),
+                lastModified = System.currentTimeMillis(),
+                format = format,
+                originalSha256 = sha,
+                currentSha256 = sha,
+                isDirty = true
+            )
+            _uiState.value = _uiState.value.copy(
+                metadata = metadata,
+                rawBytes = bytes,
+                textContent = draftText,
+                statusMessage = "Gesicherter Entwurf automatisch wiederhergestellt ⚡"
+            )
+            return true
+        }
+        return false
+    }
+
     fun createNewDocument(format: DocumentFormat) {
         val name = when (format) {
-            DocumentFormat.MD -> "neues_dokument.md"
-            DocumentFormat.TXT -> "notizen.txt"
-            else -> "dokument.${format.extension}"
+            DocumentFormat.DOCX -> "Dokument 1.docx"
+            DocumentFormat.MD -> "Notizen.docx"
+            DocumentFormat.TXT -> "Dokument.txt"
+            else -> "Dokument.${format.extension}"
         }
-        val emptyBytes = ByteArray(0)
-        val sha = BytePreservingStorageEngine.computeSha256(emptyBytes)
+        val initialText = "Dokument 1\n\nBeginnen Sie hier mit der Eingabe Ihres Textes..."
+        val initialBytes = initialText.toByteArray(StandardCharsets.UTF_8)
+        val sha = BytePreservingStorageEngine.computeSha256(initialBytes)
         val metadata = DocumentMetadata(
             uri = Uri.parse("memory://$name"),
             name = name,
-            sizeBytes = 0,
+            sizeBytes = initialBytes.size.toLong(),
             lastModified = System.currentTimeMillis(),
             format = format,
             originalSha256 = sha,
@@ -304,10 +375,33 @@ class DocumentViewModel : ViewModel() {
         )
         _uiState.value = _uiState.value.copy(
             metadata = metadata,
-            rawBytes = emptyBytes,
-            textContent = "",
+            rawBytes = initialBytes,
+            textContent = initialText,
             features = DocumentFeatures(),
             saveResult = null
         )
+    }
+
+    private fun resolveFileName(context: Context, uri: Uri): String {
+        var name: String? = null
+        if (uri.scheme == "content") {
+            try {
+                context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val idx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (idx >= 0) {
+                            name = cursor.getString(idx)
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+        if (name.isNullOrBlank()) {
+            val lastSegment = uri.lastPathSegment
+            if (!lastSegment.isNullOrBlank()) {
+                name = if (lastSegment.contains("/")) lastSegment.substringAfterLast('/') else lastSegment
+            }
+        }
+        return name ?: "Dokument.docx"
     }
 }

@@ -1,6 +1,6 @@
 {
   "name": "DocPreserve",
-  "description": "Schlanker Offline-Dokumenten-Editor mit Byte-Preserving Save, nativem Android PdfRenderer, TXT/MD-Editor und Pre-Flight-Analyse.",
+  "description": "Offline Word-Dokumenten-Editor für Samsung Galaxy A25 mit rechter Bearbeitungsleiste, Typografie-Formatierung, Zahnrad-Einstellungen und 1:1 Byte-Preserving Engine.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

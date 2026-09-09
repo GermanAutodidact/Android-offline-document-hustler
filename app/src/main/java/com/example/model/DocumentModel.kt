@@ -13,12 +13,15 @@ enum class DocumentFormat(val extension: String, val mimeType: String, val displ
     companion object {
         fun fromFileNameOrMime(name: String?, mime: String?): DocumentFormat {
             val lowerName = name?.lowercase() ?: ""
+            val lowerMime = mime?.lowercase() ?: ""
             return when {
-                lowerName.endsWith(".pdf") || mime == "application/pdf" -> PDF
-                lowerName.endsWith(".docx") || mime?.contains("wordprocessingml") == true -> DOCX
-                lowerName.endsWith(".odt") || mime?.contains("opendocument.text") == true -> ODT
-                lowerName.endsWith(".md") || lowerName.endsWith(".markdown") || mime == "text/markdown" -> MD
-                lowerName.endsWith(".txt") || mime?.startsWith("text/") == true -> TXT
+                lowerName.endsWith(".pdf") || lowerMime == "application/pdf" -> PDF
+                lowerName.endsWith(".docx") || lowerName.endsWith(".doc") || lowerName.endsWith(".docm") || lowerName.endsWith(".dotx") ||
+                    lowerMime.contains("wordprocessingml") || lowerMime.contains("msword") || lowerMime.contains("ms-word") -> DOCX
+                lowerName.endsWith(".odt") || lowerMime.contains("opendocument.text") -> ODT
+                lowerName.endsWith(".md") || lowerName.endsWith(".markdown") || lowerMime == "text/markdown" || lowerMime == "text/x-markdown" -> MD
+                lowerName.endsWith(".txt") || lowerName.endsWith(".rtf") || lowerName.endsWith(".log") || lowerName.endsWith(".json") || lowerName.endsWith(".xml") ||
+                    lowerMime.startsWith("text/") || lowerMime.contains("rtf") -> TXT
                 else -> UNKNOWN
             }
         }

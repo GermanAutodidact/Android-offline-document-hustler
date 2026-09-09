@@ -40,6 +40,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -77,11 +79,14 @@ fun TextEditor(
         mutableStateOf(if (format == DocumentFormat.MD) EditorViewMode.EDIT else EditorViewMode.EDIT)
     }
 
+    val haptic = LocalHapticFeedback.current
+
     // Large file check (> 1 MB)
     val isLargeFile = text.length > 1_000_000
 
     fun updateTextWithCommand(newText: String) {
         if (newText != text) {
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
             undoRedoManager.pushCommand(TextCommand.Replace(0, text, newText))
             text = newText
             onTextChanged(newText)
@@ -90,6 +95,7 @@ fun TextEditor(
 
     fun handleUndo() {
         if (undoRedoManager.canUndo) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             val undone = undoRedoManager.undo(text)
             text = undone
             onTextChanged(undone)
@@ -98,6 +104,7 @@ fun TextEditor(
 
     fun handleRedo() {
         if (undoRedoManager.canRedo) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             val redone = undoRedoManager.redo(text)
             text = redone
             onTextChanged(redone)
@@ -119,10 +126,14 @@ fun TextEditor(
         }
     }
 
-    val wordCount = remember(text) {
-        text.split(Regex("\\s+")).count { it.isNotBlank() }
+    val wordCount by remember {
+        androidx.compose.runtime.derivedStateOf {
+            if (text.isBlank()) 0 else text.split(Regex("\\s+")).count { it.isNotBlank() }
+        }
     }
-    val lineCount = remember(text) { text.lines().size }
+    val lineCount by remember {
+        androidx.compose.runtime.derivedStateOf { text.lines().size }
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         // Toolbar: Undo, Redo, View mode toggle (Edit/Preview/Split), Stats

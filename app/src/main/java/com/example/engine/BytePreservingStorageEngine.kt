@@ -26,9 +26,26 @@ object BytePreservingStorageEngine {
         return hash.joinToString("") { "%02x".format(it) }
     }
 
+    private const val MAX_READ_BYTES = 80 * 1024 * 1024 // 80 MB memory ceiling protection
+
     suspend fun readUriBytes(context: Context, uri: Uri): ByteArray = withContext(Dispatchers.IO) {
-        val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
-        inputStream?.use { it.readBytes() } ?: throw IllegalStateException("Konnte URI nicht lesen: $uri")
+        val stream = context.contentResolver.openInputStream(uri)
+            ?: throw IllegalStateException("Konnte URI nicht öffnen: $uri")
+
+        stream.use { s ->
+            val buffer = java.io.ByteArrayOutputStream()
+            val chunk = ByteArray(32 * 1024) // 32 KB chunk buffer
+            var totalRead = 0
+            var read: Int
+            while (s.read(chunk).also { read = it } != -1) {
+                totalRead += read
+                if (totalRead > MAX_READ_BYTES) {
+                    throw IllegalStateException("Datei überschreitet das Sicherheitslimit von 80 MB für In-Memory-Verarbeitung.")
+                }
+                buffer.write(chunk, 0, read)
+            }
+            buffer.toByteArray()
+        }
     }
 
     /**
@@ -88,24 +105,27 @@ object BytePreservingStorageEngine {
             // 2. DIRTY / FORMAT CONVERSION PATH (WITH ATOMIC TEMP + VALIDATION SAFETY)
             val tempFile = File.createTempFile("doc_save_", ".${targetFormat.extension}", context.cacheDir)
             try {
-                // Produce new bytes
-                val newBytes = when {
-                    targetFormat == DocumentFormat.TXT || targetFormat == DocumentFormat.MD -> {
-                        (editedTextContent ?: String(originalBytes, StandardCharsets.UTF_8))
-                            .toByteArray(StandardCharsets.UTF_8)
+                // Produce new bytes or write file
+                if (targetFormat == DocumentFormat.DOCX && editedTextContent != null) {
+                    SampleDocumentProvider.createDocxFromText(tempFile, editedTextContent)
+                } else {
+                    val newBytes = when {
+                        targetFormat == DocumentFormat.TXT || targetFormat == DocumentFormat.MD -> {
+                            (editedTextContent ?: String(originalBytes, StandardCharsets.UTF_8))
+                                .toByteArray(StandardCharsets.UTF_8)
+                        }
+                        targetFormat == metadata.format -> {
+                            // Same format but dirty (e.g. PDF page rotated)
+                            originalBytes
+                        }
+                        else -> {
+                            // Format conversion fallback
+                            (editedTextContent ?: String(originalBytes, StandardCharsets.UTF_8))
+                                .toByteArray(StandardCharsets.UTF_8)
+                        }
                     }
-                    targetFormat == metadata.format -> {
-                        // Same format but dirty (e.g. PDF page rotated or text modified)
-                        originalBytes
-                    }
-                    else -> {
-                        // Format conversion fallback
-                        (editedTextContent ?: String(originalBytes, StandardCharsets.UTF_8))
-                            .toByteArray(StandardCharsets.UTF_8)
-                    }
+                    FileOutputStream(tempFile).use { it.write(newBytes) }
                 }
-
-                FileOutputStream(tempFile).use { it.write(newBytes) }
 
                 // Validation Step: verify target validity before committing to user storage
                 val validationError = validateFileIntegrity(tempFile, targetFormat)

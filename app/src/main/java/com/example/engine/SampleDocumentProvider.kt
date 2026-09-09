@@ -166,26 +166,45 @@ object SampleDocumentProvider {
         doc.close()
     }
 
-    private fun createSampleDocx(targetFile: File) {
+    fun createSampleDocx(targetFile: File) {
+        createDocxFromText(
+            targetFile,
+            "DocPreserve Audit Protokoll\n\nDieses Dokument dient als Byte-Prüfmuster für OOXML-Archive.\n\nEigenschaft: Byte-Preserving\nStatus: Aktiv\n\nhttps://ai.studio"
+        )
+    }
+
+    fun createDocxFromText(targetFile: File, text: String) {
+        val paragraphs = if (text.isBlank()) {
+            "<w:p><w:r><w:t></w:t></w:r></w:p>"
+        } else {
+            text.lines().joinToString("\n") { line ->
+                val escaped = line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                "<w:p><w:r><w:t>$escaped</w:t></w:r></w:p>"
+            }
+        }
+
+        val documentXml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+$paragraphs
+  </w:body>
+</w:document>""".trimIndent()
+
         ZipOutputStream(FileOutputStream(targetFile)).use { zos ->
-            // [Content_Types].xml
             zos.putNextEntry(ZipEntry("[Content_Types].xml"))
             zos.write(DOCX_CONTENT_TYPES.toByteArray(StandardCharsets.UTF_8))
             zos.closeEntry()
 
-            // _rels/.rels
             zos.putNextEntry(ZipEntry("_rels/.rels"))
             zos.write(DOCX_RELS.toByteArray(StandardCharsets.UTF_8))
             zos.closeEntry()
 
-            // word/_rels/document.xml.rels
             zos.putNextEntry(ZipEntry("word/_rels/document.xml.rels"))
             zos.write(DOCX_DOCUMENT_RELS.toByteArray(StandardCharsets.UTF_8))
             zos.closeEntry()
 
-            // word/document.xml
             zos.putNextEntry(ZipEntry("word/document.xml"))
-            zos.write(DOCX_DOCUMENT_XML.toByteArray(StandardCharsets.UTF_8))
+            zos.write(documentXml.toByteArray(StandardCharsets.UTF_8))
             zos.closeEntry()
         }
     }
