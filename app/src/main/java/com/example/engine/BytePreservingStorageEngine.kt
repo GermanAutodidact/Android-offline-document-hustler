@@ -28,8 +28,35 @@ object BytePreservingStorageEngine {
 
     private const val MAX_READ_BYTES = 80 * 1024 * 1024 // 80 MB memory ceiling protection
 
+    private fun openSafeInputStream(context: Context, uri: Uri): java.io.InputStream? {
+        return if (uri.scheme == "file") {
+            val path = uri.path ?: uri.schemeSpecificPart
+            java.io.FileInputStream(File(path))
+        } else {
+            try {
+                context.contentResolver.openInputStream(uri)
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
+
+    private fun openSafeOutputStream(context: Context, uri: Uri): java.io.OutputStream? {
+        return if (uri.scheme == "file") {
+            val path = uri.path ?: uri.schemeSpecificPart
+            java.io.FileOutputStream(File(path))
+        } else {
+            try {
+                context.contentResolver.openOutputStream(uri, "rwt")
+                    ?: context.contentResolver.openOutputStream(uri)
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
+
     suspend fun readUriBytes(context: Context, uri: Uri): ByteArray = withContext(Dispatchers.IO) {
-        val stream = context.contentResolver.openInputStream(uri)
+        val stream = openSafeInputStream(context, uri)
             ?: throw IllegalStateException("Konnte URI nicht öffnen: $uri")
 
         stream.use { s ->
@@ -77,8 +104,7 @@ object BytePreservingStorageEngine {
 
                 if (!isZeroCopySuccess) {
                     // Fallback to direct stream write
-                    val outStream = context.contentResolver.openOutputStream(targetUri, "rwt")
-                        ?: context.contentResolver.openOutputStream(targetUri)
+                    val outStream = openSafeOutputStream(context, targetUri)
                         ?: return@withContext SaveResult.Failure("Ausgabestream konnte nicht geöffnet werden.")
                     outStream.use { it.write(originalBytes) }
                 }
@@ -141,8 +167,7 @@ object BytePreservingStorageEngine {
                     KernelZeroCopyTransfer.transferToFileDescriptor(context, tempFile, targetUri)
                 } catch (e: Exception) {
                     // Fallback to standard stream copy if kernel descriptor mapping fails
-                    val outStream = context.contentResolver.openOutputStream(targetUri, "rwt")
-                        ?: context.contentResolver.openOutputStream(targetUri)
+                    val outStream = openSafeOutputStream(context, targetUri)
                         ?: return@withContext SaveResult.Failure("Ausgabestream für Ziel-URI konnte nicht geöffnet werden.")
 
                     FileInputStream(tempFile).use { input ->

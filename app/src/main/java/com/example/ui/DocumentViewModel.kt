@@ -199,9 +199,9 @@ class DocumentViewModel : ViewModel() {
                 isSaving = false,
                 saveResult = result,
                 metadata = updatedMeta,
-                showIntegrityDialog = result is SaveResult.Success,
+                showIntegrityDialog = false,
                 statusMessage = when (result) {
-                    is SaveResult.Success -> result.message
+                    is SaveResult.Success -> "Dokument erfolgreich gespeichert ✓"
                     is SaveResult.Failure -> "Speichern fehlgeschlagen: ${result.reason}"
                 }
             )
@@ -321,7 +321,8 @@ class DocumentViewModel : ViewModel() {
             textContent = "",
             features = DocumentFeatures(),
             saveResult = null,
-            preFlightReport = null
+            preFlightReport = null,
+            statusMessage = null
         )
     }
 

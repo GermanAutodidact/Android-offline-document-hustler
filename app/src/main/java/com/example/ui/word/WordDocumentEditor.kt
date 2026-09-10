@@ -49,6 +49,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -160,17 +161,16 @@ fun WordDocumentEditor(
                 actionIconContentColor = Color.White
             ),
             navigationIcon = {
-                // Checkmark / Back button (Word Mobile Save & Exit)
+                // Back button (Word Mobile Exit to Home)
                 IconButton(
                     onClick = {
-                        onSave()
                         onClose()
                     },
                     modifier = Modifier.testTag("btn_word_back")
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Speichern und Schließen",
+                        contentDescription = "Zurück zur Hauptseite",
                         tint = Color.White
                     )
                 }
@@ -453,11 +453,26 @@ fun WordDocumentEditor(
                                 )
                         ) {
                             // THE EDITABLE RICH TEXT AREA (Pure document text surface, zero header / footer overlays)
-                            val targetTextStyle = remember(formatState, isAmoledMode) {
+                            val targetTextColor = if (isAmoledMode) {
+                                if (formatState.fontColor == Color(0xFF1F2937) ||
+                                    formatState.fontColor == Color(0xFF000000) ||
+                                    formatState.fontColor == Color.Black ||
+                                    formatState.fontColor == Color(0xFF595959) ||
+                                    formatState.fontColor == Color(0xFF333333)
+                                ) {
+                                    Color.White
+                                } else {
+                                    formatState.fontColor
+                                }
+                            } else {
+                                if (formatState.fontColor == Color.White) Color(0xFF1F2937) else formatState.fontColor
+                            }
+
+                            val targetTextStyle = remember(formatState, isAmoledMode, targetTextColor) {
                                 TextStyle(
                                     fontFamily = formatState.composeFontFamily,
                                     fontSize = formatState.fontSizePt.sp,
-                                    fontWeight = if (formatState.isBold) FontWeight.Bold else FontWeight.Normal,
+                                    fontWeight = if (formatState.isBold) FontWeight.ExtraBold else FontWeight.Normal,
                                     fontStyle = if (formatState.isItalic) FontStyle.Italic else FontStyle.Normal,
                                     textDecoration = when {
                                         formatState.isUnderline && formatState.isStrikethrough -> TextDecoration.combine(listOf(TextDecoration.Underline, TextDecoration.LineThrough))
@@ -465,30 +480,32 @@ fun WordDocumentEditor(
                                         formatState.isStrikethrough -> TextDecoration.LineThrough
                                         else -> TextDecoration.None
                                     },
-                                    color = if (isAmoledMode && formatState.fontColor == Color(0xFF000000)) Color.White else formatState.fontColor,
+                                    color = targetTextColor,
                                     background = formatState.highlightColor,
                                     textAlign = formatState.textAlign,
-                                    lineHeight = (formatState.fontSizePt * formatState.lineSpacingMultiplier * 1.3f).sp
+                                    lineHeight = (formatState.fontSizePt * formatState.lineSpacingMultiplier * 1.35f).sp
                                 )
                             }
 
-                            if (!formatState.isReadingMode) {
-                                BasicTextField(
-                                    value = content,
-                                    onValueChange = { updateText(it) },
-                                    textStyle = targetTextStyle,
-                                    cursorBrush = SolidColor(WordBlue),
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .testTag("word_document_text_editor")
-                                )
-                            } else {
-                                // Reading mode (Formatted text display)
-                                Text(
-                                    text = if (content.isNotBlank()) content else "Leeres Dokument",
-                                    style = targetTextStyle,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
+                            key(formatState.isBold, formatState.isItalic, formatState.fontSizePt, formatState.fontFamilyName, formatState.textAlign, isAmoledMode, targetTextColor) {
+                                if (!formatState.isReadingMode) {
+                                    BasicTextField(
+                                        value = content,
+                                        onValueChange = { updateText(it) },
+                                        textStyle = targetTextStyle,
+                                        cursorBrush = SolidColor(if (isAmoledMode) Color.White else WordBlue),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .testTag("word_document_text_editor")
+                                    )
+                                } else {
+                                    // Reading mode (Formatted text display)
+                                    Text(
+                                        text = if (content.isNotBlank()) content else "Leeres Dokument",
+                                        style = targetTextStyle,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
                             }
                         }
                     }

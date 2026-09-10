@@ -42,12 +42,9 @@ data class WordFormatState(
 ) {
     val composeFontFamily: FontFamily
         get() = when (fontFamilyName) {
-            "Calibri" -> FontFamily.SansSerif
-            "Arial" -> FontFamily.SansSerif
-            "Times New Roman" -> FontFamily.Serif
-            "Georgia" -> FontFamily.Serif
+            "Times New Roman", "Georgia" -> FontFamily.Serif
             "Courier New" -> FontFamily.Monospace
-            else -> FontFamily.Default // Aptos / System default clean
+            else -> FontFamily.SansSerif // Calibri, Arial, Aptos, Segoe UI with full Bold & Italic support
         }
 
     companion object {

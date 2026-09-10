@@ -1,6 +1,6 @@
 {
   "name": "DocPreserve",
-  "description": "Offline Word-Dokumenten-Editor für Samsung Galaxy A25 mit rechter Bearbeitungsleiste, Typografie-Formatierung, Zahnrad-Einstellungen und 1:1 Byte-Preserving Engine.",
+  "description": "DocPreserve – Offline Word & Dokumenten-Editor für Android & Samsung Galaxy A25. 1:1 Byte-Preserving Storage Engine (DOCX, ODT, PDF, MD, TXT), rechte Bearbeitungsleiste, Typografie-Formatierung, True-Black AMOLED-Modus, Knox-Hardware-Verschlüsselung & SHA-256 Integrität.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
