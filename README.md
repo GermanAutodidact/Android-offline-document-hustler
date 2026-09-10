@@ -1,5 +1,5 @@
-# DocPreserve 📄🔒
-### Offline Word- & Dokumenten-Editor mit 1:1 Byte-Preserving Storage Engine
+# Android Offline Document Hustler (DocPreserve) 📄🔒
+### Word Offline Clone für Android – DOCX, PDF, MD, TXT, ODT mit 1:1 Byte-Preserving Storage Engine
 
 [![Android](https://img.shields.io/badge/Platform-Android-3DDC84.svg?style=flat&logo=android)](https://www.android.com/)
 [![Kotlin](https://img.shields.io/badge/Language-Kotlin%202.0-7F52FF.svg?style=flat&logo=kotlin)](https://kotlinlang.org/)
@@ -8,7 +8,24 @@
 [![Security](https://img.shields.io/badge/Security-Knox%20Hardware%20Vault%20AES--256--GCM-red.svg)](https://developer.samsung.com/knox)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**DocPreserve** ist ein nativer, hochgradig optimierter Offline-Dokumenteneditor für Android (speziell abgestimmt auf das **Samsung Galaxy A25** und Samsung One UI). Die App verbindet die vertraute mobile Microsoft-Word-Bedienung mit einer revolutionären **1:1 Byte-Preserving Storage Engine**, die Originaldateien bei unveränderten Inhalten auf Bitebene exakt bewahrt (Bit-für-Bit-Integrität via SHA-256).
+**Android-offline-document-hustler (DocPreserve)** ist ein nativer, hochgradig optimierter Offline Word-Clone für Android (speziell abgestimmt auf Smartphones wie das **Samsung Galaxy A25** und One UI). Die App verbindet die vertraute mobile Microsoft-Word-Bedienung mit einer kompromisslosen **1:1 Byte-Preserving Storage Engine**, die Originaldateien bei unveränderten Inhalten auf Bitebene exakt bewahrt (Bit-für-Bit-Integrität via SHA-256).
+
+---
+
+## 🏷️ GitHub Repository Setup (Für beste Auffindbarkeit & SEO)
+
+Falls dein GitHub-Repository noch die alten Standard-Texte anzeigt, kannst du diese auf **GitHub.com** mit zwei Klicks aktualisieren (da GitHub Web-Metadaten nicht über Git-Commits geändert werden können):
+
+1. **Repository Name** (unter *Settings* ➔ *General* ➔ *Repository name*):
+   - `Android-offline-document-hustler` oder `android-word-offline-editor`
+2. **About / Beschreibung** (auf der GitHub-Hauptseite rechts bei ⚙️ *About*):
+   ```text
+   Word offline Clone für Android inklusive DOCX, PDF, MD, TXT & ODT Editor mit 1:1 Byte-Preserving Engine, rechter Bearbeitungsleiste & Knox-Sicherheit.
+   ```
+3. **Topics / Tags** (im selben ⚙️ *About*-Fenster eingeben):
+   ```text
+   android, word-clone, docx, odt, markdown, pdf-editor, text-editor, byte-preserving, offline-first, kotlin, jetpack-compose, material3, samsung-galaxy, knox-vault
+   ```
 
 ---
 

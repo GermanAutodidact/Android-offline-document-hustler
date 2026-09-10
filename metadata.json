@@ -1,6 +1,6 @@
 {
   "name": "DocPreserve",
-  "description": "DocPreserve – Offline Word & Dokumenten-Editor für Android & Samsung Galaxy A25. 1:1 Byte-Preserving Storage Engine (DOCX, ODT, PDF, MD, TXT), rechte Bearbeitungsleiste, Typografie-Formatierung, True-Black AMOLED-Modus, Knox-Hardware-Verschlüsselung & SHA-256 Integrität.",
+  "description": "Word offline Clone für Android inklusive DOCX, PDF, MD, TXT & ODT Editor. 1:1 Byte-Preserving Storage Engine, ausklappbare rechte Bearbeitungsleiste, True-Black AMOLED Modus & Knox-Hardware-Sicherheit.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
