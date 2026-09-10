@@ -30,7 +30,7 @@ class ExampleRobolectricTest {
     fun testReadAppNameFromContext() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val appName = context.getString(R.string.app_name)
-        assertEquals("DocPreserve", appName)
+        assertEquals("AllDocsOff", appName)
     }
 
     @Test

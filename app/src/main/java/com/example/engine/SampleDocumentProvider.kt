@@ -99,7 +99,7 @@ object SampleDocumentProvider {
         paint.color = Color.WHITE
         paint.textSize = 24f
         paint.isFakeBoldText = true
-        canvas1.drawText("DocPreserve System Specification", 40f, 60f, paint)
+        canvas1.drawText("AllDocsOff System Specification", 40f, 60f, paint)
 
         paint.textSize = 14f
         paint.isFakeBoldText = false
@@ -169,7 +169,7 @@ object SampleDocumentProvider {
     fun createSampleDocx(targetFile: File) {
         createDocxFromText(
             targetFile,
-            "DocPreserve Audit Protokoll\n\nDieses Dokument dient als Byte-Prüfmuster für OOXML-Archive.\n\nEigenschaft: Byte-Preserving\nStatus: Aktiv\n\nhttps://ai.studio"
+            "AllDocsOff Audit Protokoll\n\nDieses Dokument dient als Byte-Prüfmuster für OOXML-Archive.\n\nEigenschaft: Byte-Preserving\nStatus: Aktiv\n\nhttps://ai.studio"
         )
     }
 
@@ -210,7 +210,7 @@ $paragraphs
     }
 
     private val SAMPLE_MARKDOWN = """
-# DocPreserve Entwurf: Phase 0
+# AllDocsOff Entwurf: Phase 0
 
 ## 1. Wichtigste Neuerung: Byte-Preserving Save (No-Op-Save)
 Wenn ein Dokument geöffnet und **nichts verändert** wird, kopiert die Engine die Originalbytes direkt:
@@ -234,10 +234,10 @@ Wenn ein Dokument geöffnet und **nichts verändert** wird, kopiert die Engine d
 - **MD → TXT**: Reine Textausgabe, Markdown-Tags bleiben erhalten.
 
 ---
-*Erstellt mit DocPreserve Studio — Offline, bytegenau & sicher.*
+*Erstellt mit AllDocsOff Studio — Offline, bytegenau & sicher.*
 """.trimIndent()
 
-    private val SAMPLE_TEXT = """DocPreserve - Byte-Preservation Manifesto
+    private val SAMPLE_TEXT = """AllDocsOff - Byte-Preservation Manifesto
 =========================================
 
 Problem in Standard-Office-Suiten:
@@ -278,7 +278,7 @@ Damit bleibt:
   <w:body>
     <w:p>
       <w:r>
-        <w:t>DocPreserve Audit Protokoll</w:t>
+        <w:t>AllDocsOff Audit Protokoll</w:t>
       </w:r>
     </w:p>
     <w:p>

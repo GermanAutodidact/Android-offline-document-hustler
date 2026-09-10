@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# DocPreserve - Aggressively Optimized LibreOfficeKit Build Script for Android
+# AllDocsOff - Aggressively Optimized LibreOfficeKit Build Script for Android
 # Target Device: Samsung Galaxy A25 (SM-A256B, Exynos 1280 - ARM64-v8a)
 # ==============================================================================
 set -euo pipefail
@@ -51,7 +51,7 @@ AUTOGEN_ARGS=(
 )
 
 echo "===================================================================="
-echo "DocPreserve: Starting LOKit minimal build for Samsung Galaxy A25"
+echo "AllDocsOff: Starting LOKit minimal build for Samsung Galaxy A25"
 echo "ABI:             ${ANDROID_ABI}"
 echo "Compiler Flags:  ${CFLAGS}"
 echo "Linker Flags:    ${LDFLAGS}"

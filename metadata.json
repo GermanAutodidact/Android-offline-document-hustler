@@ -1,6 +1,6 @@
 {
-  "name": "DocPreserve",
-  "description": "Word offline Clone für Android inklusive DOCX, PDF, MD, TXT & ODT Editor. 1:1 Byte-Preserving Storage Engine, ausklappbare rechte Bearbeitungsleiste, True-Black AMOLED Modus & Knox-Hardware-Sicherheit.",
+  "name": "AllDocsOff",
+  "description": "AllDocsOff – Word offline Clone für Android inklusive DOCX, PDF, MD, TXT & ODT Editor. 1:1 Byte-Preserving Storage Engine, ausklappbare rechte Bearbeitungsleiste, True-Black AMOLED Modus & Knox-Hardware-Sicherheit.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

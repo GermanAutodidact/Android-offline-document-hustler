@@ -29,7 +29,7 @@ object KnoxHardwareVault {
 
     private const val TAG = "KnoxHardwareVault"
     private const val KEYSTORE_PROVIDER = "AndroidKeyStore"
-    private const val MASTER_KEY_ALIAS = "DocPreserve_Knox_Hardware_Master_Key"
+    private const val MASTER_KEY_ALIAS = "AllDocsOff_Knox_Hardware_Master_Key"
     private const val GCM_IV_LENGTH = 12
     private const val GCM_TAG_LENGTH = 128
     private val HEADER_MAGIC = "KNOX_VAULT_V1".toByteArray(StandardCharsets.UTF_8)

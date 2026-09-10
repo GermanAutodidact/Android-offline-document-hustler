@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "DocPreserve"
+rootProject.name = "AllDocsOff"
 
 include(":app")

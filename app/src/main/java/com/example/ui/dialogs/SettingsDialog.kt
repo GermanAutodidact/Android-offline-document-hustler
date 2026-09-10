@@ -132,7 +132,7 @@ fun SettingsDialog(
                                     color = Color.White
                                 )
                                 Text(
-                                    text = "DocPreserve · Samsung Galaxy A25 Edition",
+                                    text = "AllDocsOff · Samsung Galaxy A25 Edition",
                                     fontSize = 11.sp,
                                     color = Color.White.copy(alpha = 0.8f)
                                 )
@@ -381,7 +381,7 @@ fun SettingsDialog(
                     HorizontalDivider(color = if (isAmoledMode) Color(0xFF222222) else WordBorderGray)
 
                     // 3. BYTE-PRESERVATION & SPEICHER-ENGINE
-                    SettingsSectionTitle(title = "DocPreserve Speicher-Engine", iconRes = R.drawable.ic_shield_check)
+                    SettingsSectionTitle(title = "AllDocsOff Speicher-Engine", iconRes = R.drawable.ic_shield_check)
 
                     SettingsSwitchCard(
                         title = "1:1 Byte-Preserving No-Op Speichern",
@@ -476,7 +476,7 @@ fun SettingsDialog(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "DocPreserve Word Edition · v2.2.0 (Samsung Galaxy A25)",
+                                text = "AllDocsOff Word Edition · v2.2.0 (Samsung Galaxy A25)",
                                 fontSize = 11.sp,
                                 color = if (isAmoledMode) Color.LightGray else Color(0xFF605E5C)
                             )

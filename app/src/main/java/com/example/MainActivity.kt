@@ -101,7 +101,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val uiState by viewModel.uiState.collectAsState()
             MyApplicationTheme(amoledMode = uiState.isAmoledBlackMode) {
-                DocPreserveApp(viewModel = viewModel)
+                AllDocsOffApp(viewModel = viewModel)
             }
         }
     }
@@ -142,7 +142,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DocPreserveApp(viewModel: DocumentViewModel) {
+fun AllDocsOffApp(viewModel: DocumentViewModel) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -185,7 +185,7 @@ fun DocPreserveApp(viewModel: DocumentViewModel) {
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             if (showOuterTopBar) {
-                DocPreserveTopAppBar(
+                AllDocsOffTopAppBar(
                     metadata = uiState.metadata,
                     isAmoledMode = uiState.isAmoledBlackMode,
                     onToggleAmoled = { viewModel.toggleAmoledMode(context) },
@@ -412,7 +412,7 @@ fun DocPreserveApp(viewModel: DocumentViewModel) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DocPreserveTopAppBar(
+fun AllDocsOffTopAppBar(
     metadata: DocumentMetadata?,
     isAmoledMode: Boolean,
     onToggleAmoled: () -> Unit,

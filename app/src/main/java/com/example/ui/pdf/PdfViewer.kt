@@ -161,7 +161,7 @@ fun PdfViewer(
                     callback?.onLayoutCancelled()
                     return
                 }
-                val info = PrintDocumentInfo.Builder("DocPreserve_Document.pdf")
+                val info = PrintDocumentInfo.Builder("AllDocsOff_Document.pdf")
                     .setContentType(PrintDocumentInfo.CONTENT_TYPE_DOCUMENT)
                     .setPageCount(pageCount)
                     .build()
@@ -184,7 +184,7 @@ fun PdfViewer(
                 }
             }
         }
-        printManager.print("DocPreserve PDF", adapter, null)
+        printManager.print("AllDocsOff PDF", adapter, null)
     }
 
     Column(

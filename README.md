@@ -1,4 +1,4 @@
-# Android Offline Document Hustler (DocPreserve) 📄🔒
+# AllDocsOff 📄🔒
 ### Word Offline Clone für Android – DOCX, PDF, MD, TXT, ODT mit 1:1 Byte-Preserving Storage Engine
 
 [![Android](https://img.shields.io/badge/Platform-Android-3DDC84.svg?style=flat&logo=android)](https://www.android.com/)
@@ -8,7 +8,7 @@
 [![Security](https://img.shields.io/badge/Security-Knox%20Hardware%20Vault%20AES--256--GCM-red.svg)](https://developer.samsung.com/knox)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**Android-offline-document-hustler (DocPreserve)** ist ein nativer, hochgradig optimierter Offline Word-Clone für Android (speziell abgestimmt auf Smartphones wie das **Samsung Galaxy A25** und One UI). Die App verbindet die vertraute mobile Microsoft-Word-Bedienung mit einer kompromisslosen **1:1 Byte-Preserving Storage Engine**, die Originaldateien bei unveränderten Inhalten auf Bitebene exakt bewahrt (Bit-für-Bit-Integrität via SHA-256).
+**AllDocsOff** ist ein nativer, hochgradig optimierter Offline Word-Clone für Android (speziell abgestimmt auf Smartphones wie das **Samsung Galaxy A25** und One UI). Die App verbindet die vertraute mobile Microsoft-Word-Bedienung mit einer kompromisslosen **1:1 Byte-Preserving Storage Engine**, die Originaldateien bei unveränderten Inhalten auf Bitebene exakt bewahrt (Bit-für-Bit-Integrität via SHA-256).
 
 ---
 
@@ -17,14 +17,14 @@
 Falls dein GitHub-Repository noch die alten Standard-Texte anzeigt, kannst du diese auf **GitHub.com** mit zwei Klicks aktualisieren (da GitHub Web-Metadaten nicht über Git-Commits geändert werden können):
 
 1. **Repository Name** (unter *Settings* ➔ *General* ➔ *Repository name*):
-   - `Android-offline-document-hustler` oder `android-word-offline-editor`
+   - `AllDocsOff`
 2. **About / Beschreibung** (auf der GitHub-Hauptseite rechts bei ⚙️ *About*):
    ```text
    Word offline Clone für Android inklusive DOCX, PDF, MD, TXT & ODT Editor mit 1:1 Byte-Preserving Engine, rechter Bearbeitungsleiste & Knox-Sicherheit.
    ```
 3. **Topics / Tags** (im selben ⚙️ *About*-Fenster eingeben):
    ```text
-   android, word-clone, docx, odt, markdown, pdf-editor, text-editor, byte-preserving, offline-first, kotlin, jetpack-compose, material3, samsung-galaxy, knox-vault
+   alldocsoff, android, word-clone, docx, odt, markdown, pdf-editor, text-editor, byte-preserving, offline-first, kotlin, jetpack-compose, material3, samsung-galaxy, knox-vault
    ```
 
 ---
@@ -33,7 +33,7 @@ Falls dein GitHub-Repository noch die alten Standard-Texte anzeigt, kannst du di
 
 ### 1. 🔏 1:1 Byte-Preserving Storage Engine (No-Op-Save)
 - **Linux Kernel Zero-Copy:** Nutzt den `sendfile`-Systemaufruf des Linux-Kernels für direkte Deskriptor-Übertragungen ohne Zwischenpufferung im Userspace.
-- **Bitgenaue Erhaltung:** Wenn ein Dokument ohne Format- oder Textänderung gespeichert wird, garantiert DocPreserve einen identischen SHA-256-Hash zum Original (`No-Op-Save`).
+- **Bitgenaue Erhaltung:** Wenn ein Dokument ohne Format- oder Textänderung gespeichert wird, garantiert AllDocsOff einen identischen SHA-256-Hash zum Original (`No-Op-Save`).
 - **Atomare Dateispeicherungen:** Änderungen werden in isolierten temporären Dateien vorbereitet, auf Integrität validiert und erst dann atomar am Zielspeicherort ersetzt.
 - **Pre-Flight Conversion Scanner:** Warnt vor potenziellem Formatverlust (z. B. Makros, Vektorgrafiken, komplexe Tabellen), bevor eine Konvertierung ausgeführt wird.
 
@@ -71,7 +71,7 @@ Falls dein GitHub-Repository noch die alten Standard-Texte anzeigt, kannst du di
 
 ## 🏛️ Architektur & Technische Details
 
-DocPreserve folgt strikt den Empfehlungen der **Android Clean Architecture** und **MVVM**:
+AllDocsOff folgt strikt den Empfehlungen der **Android Clean Architecture** und **MVVM**:
 
 ```
 com.example/
@@ -123,7 +123,7 @@ com.example/
 
 ## 🔒 Datenschutz & Google Play Richtlinien
 
-- **Keine unnötigen Berechtigungen:** DocPreserve nutzt das Android Storage Access Framework (SAF) und den modernen Photo/File Picker. Es werden **keine** weitreichenden Dateiberechtigungen (`MANAGE_EXTERNAL_STORAGE`) angefordert.
+- **Keine unnötigen Berechtigungen:** AllDocsOff nutzt das Android Storage Access Framework (SAF) und den modernen Photo/File Picker. Es werden **keine** weitreichenden Dateiberechtigungen (`MANAGE_EXTERNAL_STORAGE`) angefordert.
 - **Keine Internetverbindung nötig:** Das Manifest deklariert keine `android.permission.INTERNET`-Berechtigung. Dokumente verlassen zu keinem Zeitpunkt das Gerät.
 - **Keine Tracking- oder Werbe-SDKs:** 100% quelloffen, transparent und sicher.
 
@@ -135,4 +135,4 @@ Dieses Projekt steht unter der [MIT-Lizenz](LICENSE).
 
 ---
 
-*Keywords: android, kotlin, jetpack-compose, material3, word-editor, docx, odt, pdf, markdown, byte-preserving, storage-access-framework, samsung-galaxy, amoled, knox-vault, zero-copy, offline-first*
+*Keywords: alldocsoff, android, kotlin, jetpack-compose, material3, word-editor, docx, odt, pdf, markdown, byte-preserving, storage-access-framework, samsung-galaxy, amoled, knox-vault, zero-copy, offline-first*

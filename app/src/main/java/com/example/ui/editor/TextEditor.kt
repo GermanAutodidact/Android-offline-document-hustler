@@ -112,7 +112,7 @@ fun TextEditor(
     }
 
     fun copyToClipboard() {
-        val clip = ClipData.newPlainText("DocPreserve Text", text)
+        val clip = ClipData.newPlainText("AllDocsOff Text", text)
         clipboardManager.setPrimaryClip(clip)
     }
 

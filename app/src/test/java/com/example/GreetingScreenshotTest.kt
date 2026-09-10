@@ -28,7 +28,8 @@ class GreetingScreenshotTest {
                     sampleDocs = emptyList(),
                     onOpenSaf = {},
                     onCreateNew = {},
-                    onOpenSample = {}
+                    onOpenSample = {},
+                    onOpenSettings = {}
                 )
             }
         }

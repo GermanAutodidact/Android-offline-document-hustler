@@ -96,7 +96,7 @@ fun DocumentHomeScreen(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = "DocPreserve",
+                            text = "AllDocsOff",
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
